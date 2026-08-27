@@ -1,0 +1,32 @@
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Build output
+[Bb]in/
+[Oo]bj/
+
+# Visual Studio cache
+.vscode/
+
+# Test results
+TestResults/
+*.trx
+
+# ReSharper
+_ReSharper*/
+*.[Rr]e[Ss]harper
+
+# NuGet
+*.nupkg
+*.snupkg
+
+# ASP.NET Core
+appsettings.*.local.json
+
+# OS files
+.DS_Store
+Thumbs.db
