@@ -1,11 +1,11 @@
-﻿# Real-Time Mini Trading Platform
+# Real-Time Mini Trading Platform
 
 A candidate evaluation project: a mini real-time trading platform with an
 **ASP.NET Core 8 Web API** backend, a **React (Vite, JavaScript)** dashboard,
 **SignalR** live price streaming, and **SQL Server** (EF Core 8) trade storage.
 
-> **Status: 🚧 In progress — Phases 0–2 complete (backend foundation + provider auth).**
-> Phase 3 (WebSocket price feed) is on hold pending provider credentials.
+> **Status: 🚧 In progress — Phases 0–5 complete (backend: auth, live/mock price feed, throttled SignalR streaming, REST endpoints, order handling).**
+> Phase 6 (React dashboard) has not started yet.
 > See [`docs/trading-platform-plan.md`](docs/trading-platform-plan.md) for the full roadmap
 > and [`AI_HANDOFF.md`](AI_HANDOFF.md) for the current project state.
 
@@ -24,8 +24,11 @@ A candidate evaluation project: a mini real-time trading platform with an
 | 0 | API investigation & assumptions | ✅ Done |
 | 1 | Configuration + EF Core data layer (`Trades` table, migration applied) | ✅ Done |
 | 2 | Provider authentication service (`AuthService`, verified live to the 401 round trip) | ✅ Done |
-| 3 | WebSocket price feed (dual-mode: live + mock) | ⏸️ On hold — provider credentials not provided in the assignment PDF |
-| 4–10 | SignalR streaming, REST endpoints, React dashboard, hardening, tests, delivery | ⬜ Upcoming |
+| 2.5 | Auth resolution (Digest handshake reverse-engineered; live token acquisition verified) | ✅ Done |
+| 3 | WebSocket price feed (dual-mode: live + mock; reconnect/backoff; `IPriceStore`) | ✅ Done |
+| 4 | SignalR throttled price broadcast (`MarketHub`, `MarketBroadcastService`, ~300 ms batches) | ✅ Done |
+| 5 | REST endpoints (`/api/prices`, `/api/orders`, `/api/trades`, `/api/positions`, `/api/health`), global exception middleware, FluentValidation | ✅ Done |
+| 6–10 | React dashboard, order/history/positions UI, hardening, tests, delivery | ⬜ Upcoming |
 
 ## Tech stack (locked)
 
