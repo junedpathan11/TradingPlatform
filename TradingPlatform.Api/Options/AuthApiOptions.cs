@@ -18,5 +18,8 @@ public sealed class AuthApiOptions
     /// <summary>Provider credentials — from user-secrets ONLY (never appsettings.json).</summary>
     public string Username { get; set; } = string.Empty;
 
+    /// <summary>Provider account id — credential from user-secrets ONLY. Placement in the
+    /// request is hypothesis H1 ({"userId","accountId","password"}) until a 200 confirms it.</summary>
+    public string AccountId { get; set; } = string.Empty;
     public string Password { get; set; } = string.Empty;
 }
