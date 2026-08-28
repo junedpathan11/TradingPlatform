@@ -1,4 +1,4 @@
-﻿# Real-Time Trading Platform — Project Plan (.NET Core)
+# Real-Time Trading Platform — Project Plan (.NET Core)
 
 **Assignment:** Real-Time Mini Trading Platform — Candidate Evaluation Task
 **Stack:** ASP.NET Core 8 Web API + SignalR · React (Vite) SPA · SQL Server + EF Core
@@ -201,38 +201,38 @@ CREATE INDEX IX_Trades_Symbol ON Trades (Symbol);
 
 **Done when:** the service survives a forced server drop (kill test), reconnects, logs the whole lifecycle.
 
-### Phase 4 — Price store + SignalR broadcast with throttling (≈ 45 min)
+### Phase 4 — Price store + SignalR broadcast with throttling (≈ 45 min) ✅ COMPLETE (verified 2026-08-28)
 
-- [ ] `InMemoryPriceStore`: `ConcurrentDictionary<string, PriceTick>`; `PriceTick { Symbol, Bid/Price, Change?%, ServerTimestampUtc, Seq }`; drop stale/duplicate `Seq`.
-- [ ] Throttle: feed service buffers ticks; a periodic flush (default **300 ms**) publishes only **latest tick per symbol** changed since last flush → `IMarketHubProxy` broadcast.
-- [ ] `MarketHub` (SignalR): on connect, client joins `"market"` group; server method `SubscribePrice(symbol)` optional for targeted updates.
-- [ ] On client connect, hub immediately sends current snapshot (so a late-joining browser sees prices instantly).
-- [ ] Payload contract (document it — evaluators read this):
+- [x] `InMemoryPriceStore`: `ConcurrentDictionary<string, PriceTick>` keyed by symbol (Phase 3). *(Change%/Seq fields not added — deferred; changePct is instead computed at the broadcast/read boundary, see below.)*
+- [x] Throttle: a dedicated `MarketBroadcastService` (`BackgroundService`) reads `IPriceStore` on a periodic flush (**300 ms**) and publishes only **latest tick per symbol** changed since the last flush → SignalR `"market"` group broadcast. (Decoupled from the feed services themselves, so it works identically regardless of Feed:Mode.)
+- [x] `MarketHub` (SignalR) at `/hubs/market`: on connect, client joins the `"market"` group. *(Optional `SubscribePrice(symbol)` targeted-update method not implemented — not required for the verified group-broadcast flow.)*
+- [x] On client connect, `MarketHub.OnConnectedAsync` immediately sends the current `IPriceStore` snapshot to the caller (late-joining browser sees prices instantly).
+- [x] Payload contract implemented as documented:
 
 ```json
 // SignalR event "prices" → array batch
 { "prices": [ { "symbol": "EURUSD", "price": 1.08348, "changePct": 0.12, "ts": "2026-08-27T06:15:30Z" } ] }
 ```
 
-**Done when:** a console/browser test client sees batched updates at ~3/sec instead of per-tick spam.
+**Done when:** a console/browser test client sees batched updates at ~3/sec instead of per-tick spam. — ✅ **Verified**: manual `@microsoft/signalr` browser-console client received the initial 6-symbol snapshot plus continuous ~300 ms throttled batches, no CORS/connection errors (Mock feed mode).
 
-### Phase 5 — REST endpoints + order handling (≈ 45 min)
+### Phase 5 — REST endpoints + order handling (≈ 45 min) ✅ COMPLETE (verified 2026-08-28)
 
-| Method | Route | Behavior |
-|---|---|---|
-| GET | `/api/prices` | Latest tick per symbol from `IPriceStore` (snapshot) |
-| POST | `/api/orders` | Validate → execute at latest price → persist → return confirmation |
-| GET | `/api/trades` | Recent trades (paged, newest first) |
-| GET | `/api/positions` | Net position + realized/unrealized PnL per symbol *(optional but targeted)* |
-| GET | `/api/health` | `{ api: ok, feed: Connected, lastTickAt, symbols, uptime }` |
+| Method | Route | Behavior | Status |
+|---|---|---|---|
+| GET | `/api/prices` | Latest tick per symbol from `IPriceStore` (snapshot) | ✅ Verified |
+| POST | `/api/orders` | Validate → execute at latest price → persist → return confirmation | ✅ Verified |
+| GET | `/api/trades` | Recent trades (paged, newest first) | ✅ Verified |
+| GET | `/api/positions` | Net position + realized/unrealized PnL per symbol *(optional but targeted)* | ✅ Verified (long/short netting, average-cost accounting, partial closes, flat positions) |
+| GET | `/api/health` | `{ api: ok, feed: Connected, lastTickAt, symbols, uptime }` | ✅ Verified |
 
-**Order flow (backend):** request `{ symbol, side: Buy|Sell, quantity }` → validate (symbol exists in store, quantity > 0 and ≤ cap) → take price from `IPriceStore` (error 409-style response if no live price for symbol) → build `Trade` (status `Filled`; `Rejected` with reason for validation failures — assignment allows either) → persist via repository → return `{ tradeId: "TRD10001", ... , executedPrice, timestampUtc }`.
+**Order flow (backend):** request `{ symbol, side: Buy|Sell, quantity }` → validate (symbol exists in store, quantity > 0 and ≤ cap) → take price from `IPriceStore` (error 409-style response if no live price for symbol) → build `Trade` (status `Filled`; `Rejected` with reason for validation failures — assignment allows either) → persist via repository → return `{ tradeId: "TRD10001", ... , executedPrice, timestampUtc }`. *(Only `Filled` trades are ever persisted — validation failures return 4xx without writing a row; `Rejected` status is defined but not currently reachable, per docs/assumptions.md D4.)*
 
-- [ ] TradeId formatted `TRD100xx` on the response/DTO (identity PK stays int internally).
-- [ ] Global exception middleware → consistent `{ error }` JSON + logged; no stack traces to client.
-- [ ] FluentValidation rules for the order request.
+- [x] TradeId formatted `TRD100xx` on the response/DTO (identity PK stays int internally). Verified on `POST /api/orders` and `GET /api/trades`.
+- [x] Global exception middleware → consistent `{ error }` JSON + logged; no stack traces to client. Verified via forced unhandled-exception test (500 response with `{ error, traceId }`, full exception logged server-side).
+- [x] FluentValidation rules for the order request. `OrderRequestValidator` invoked manually in `OrdersController` (not wired into ASP.NET's automatic `ModelState` pipeline), preserving the existing `{ error: "..." }` response shape.
 
-**Done when:** Swagger can round-trip: place order → see it in `/api/trades` with the live price at execution time.
+**Done when:** Swagger can round-trip: place order → see it in `/api/trades` with the live price at execution time. — ✅ **Verified**: EURUSD Buy 10 → `TRD10001` → confirmed row in `dbo.Trades` and in `GET /api/trades`; validation edge cases (qty ≤ 0, qty > cap, invalid side, unknown symbol) all return the correct 4xx/409 without persisting a row.
 
 ### Phase 6 — React live dashboard (≈ 75 min)
 

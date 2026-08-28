@@ -1,10 +1,10 @@
-﻿# AI_HANDOFF.md — Real-Time Mini Trading Platform (LOCAL PROJECT)
+# AI_HANDOFF.md — Real-Time Mini Trading Platform (LOCAL PROJECT)
 
 > **⚠️ WORKFLOW MODE (updated 2026-08-27): LOCAL-GUIDED DEVELOPMENT.**
 > The user builds **locally in Visual Studio 2022**; the Arena workspace is a **planning/reference workspace only** (frozen reference scaffold + probe evidence — not authoritative). The AI gives small numbered steps; the user performs them locally and reports back; the AI verifies; then next step. The AI must explain every artifact per the learning rule (file name, exact location, why, responsibility, architecture layer, used-by; packages: name, why, phase, required/optional) and must never create/modify anything in the workspace on the user's behalf or advance phases without explicit go-ahead.
 
 **Purpose:** continuity document — any AI agent can resume from this exact point without conversation history.
-**Last updated:** 2026-08-28 · **Current phase:** Phase 2.5 COMPLETE ✅ (AUTH SOLVED, live-verified) · **Phase 3 IN PROGRESS** (Step 12 issued: feed config + price store; Steps 13–15 follow) 
+**Last updated:** 2026-08-28 · **Current phase:** Phase 5 COMPLETE ✅ (all REST endpoints + SignalR broadcast + order handling verified) · **Phase 6 (React dashboard) NOT STARTED**
 
 ---
 
@@ -106,10 +106,10 @@ Auth foundation: `AuthApiOptions`, `IAuthService`/`AuthService`, `AuthException`
 | 1 | Config + EF Core data layer | ✅ COMPLETE (SSMS-verified, committed) |
 | 2 | AuthService foundation | ✅ COMPLETE (committed) |
 | 2.5 | Auth resolution (Digest reverse-engineering) | ✅ **COMPLETE — token acquisition live-verified** |
-| 3 | Price feed (live WS + mock fallback) | 🔄 **IN PROGRESS** — Step 12 issued (FeedOptions, PriceTick, IPriceStore/InMemoryPriceStore, appsettings Feed, DI). Next: Step 13 FeedStateService + PriceMessageParser · Step 14 LivePriceFeedService (+ Mock) · Step 15 first live ticks + raw-message capture (closes U4) |
-| 4 | SignalR throttled broadcast | ⬜ |
-| 5 | REST endpoints + orders (+ remove WeatherForecast + AuthProbe) | ⬜ |
-| 6 | React live dashboard | ⬜ pre-req: fresh React+Vite+**JS** scaffold locally (never the workspace TS one) |
+| 3 | Price feed (live WS + mock fallback) | ✅ **COMPLETE** — `FeedOptions`/`PriceTick`/`IPriceStore`/`InMemoryPriceStore`/`FeedStateService`/`PriceMessageParser`/`LivePriceFeedService`/`MockPriceFeedService` all implemented; dual-mode via `Feed:Mode` (committed `e1fba90`) |
+| 4 | SignalR throttled broadcast | ✅ **COMPLETE (verified 2026-08-28)** — `MarketHub` (`/hubs/market`, `"market"` group, snapshot-on-connect) + `MarketBroadcastService` (300 ms throttled `"prices"` batches); manual browser-console SignalR client confirmed snapshot + ~3/sec batched updates |
+| 5 | REST endpoints + orders | ✅ **COMPLETE (verified 2026-08-28)** — `GET /api/prices`, `GET /api/health`, `POST /api/orders`, `GET /api/trades`, `GET /api/positions`, `TRD100xx` formatting, global `ExceptionHandlingMiddleware`, `OrderRequestValidator` (FluentValidation) — all step-by-step verified via Swagger + SQL Server checks. *(Temporary `AuthProbeController`/`WeatherForecastController` not yet removed — deferred, not required for functionality.)* |
+| 6 | React live dashboard | ⬜ **NOT STARTED** — pre-req: fresh React+Vite+**JS** scaffold locally (never the workspace TS one) |
 | 7 | Order ticket, history, positions UI | ⬜ |
 | 8 | Hardening (Serilog; remove temp logs/probe) | ⬜ |
 | 9 | Unit tests (xUnit project) | ⬜ |
@@ -117,13 +117,22 @@ Auth foundation: `AuthApiOptions`, `IAuthService`/`AuthService`, `AuthException`
 
 ## 9. Decision log / exact next steps
 
-**2026-08-27:** Phase 3 held (no credentials). **2026-08-28:** credentials received → auth investigation ran (T0–T2 body shapes → OPTIONS probe revealed Digest → MD5 bisection → UA discovery → `result` field) → **auth solved**. User approved live-first Phase 3 with mock fallback behind `Feed:Mode`.
+**2026-08-27:** Phase 3 held (no credentials). **2026-08-28:** credentials received → auth investigation ran (T0–T2 body shapes → OPTIONS probe revealed Digest → MD5 bisection → UA discovery → `result` field) → **auth solved**. User approved live-first Phase 3 with mock fallback behind `Feed:Mode`. Phase 3 completed and committed (`e1fba90`).
+
+**2026-08-28 (continued):** Phases 4 and 5 built and verified step-by-step (Steps 16–24), then committed and pushed to `main` (`b7e842e "Complete Phase 4 and Phase 5"`):
+- Step 16: `MarketHub` + SignalR registration + CORS + snapshot-on-connect.
+- Step 17: `MarketBroadcastService` — 300 ms throttled diff-based `"prices"` broadcast to the `"market"` group.
+- Step 18: `GET /api/prices` (`PricesController`).
+- Step 19: `GET /api/health` (`HealthController`).
+- Step 20: `POST /api/orders` (`OrdersController`, `Contracts/OrderRequest`/`OrderResponse`) — manual validation initially, `TRD100xx` formatting.
+- Step 21: `GET /api/trades` (`TradesController`, `Contracts/TradeDto`) — paged, newest-first.
+- Step 22: `GET /api/positions` (`PositionsController`, `IPositionCalculator`/`PositionCalculator`, `Contracts/PositionDto`) — average-cost netting, long/short support, realized/unrealized PnL, null-safe when no live price.
+- Step 23: `Middleware/ExceptionHandlingMiddleware` — global `{ error, traceId }` JSON envelope, logged server-side, registered first in the pipeline.
+- Step 24: `Validators/OrderRequestValidator` (FluentValidation package added) — replaced manual checks in `OrdersController`, invoked manually (not auto-wired into `ModelState`) to preserve the existing `{ error }` response shape. *(Hit and resolved a DI-registration placement bug: the `AddScoped<IValidator<OrderRequest>, OrderRequestValidator>()` call must be registered before `builder.Build()`, not after.)*
 
 **Immediate next actions:**
-1. User confirms Step 12 files created + build green (then commit Step 12–15 together or per step, user's choice).
-2. Agent issues Step 13: `FeedStateService` (connection state singleton: Disconnected/Connecting/Connected/Error) + `PriceMessageParser` (tolerant, logs-and-skips malformed; final field mapping waits for live capture).
-3. Step 14: `ILivePriceFeedService`/`LivePriceFeedService` (`BackgroundService`; connect `ws://…/ws?token={token}` via `IAuthService.GetTokenAsync`; receive loop; exponential backoff w/ jitter; on WS 401 → `InvalidateToken()` → re-auth) + `MockPriceFeedService` (random-walk FX ticks) + mode selection in DI.
-4. Step 15: run → observe console → capture 2–3 raw WS messages verbatim → finalize parser field mapping → close U4/U5; update docs; commit.
+1. Confirm with the user whether to start Phase 6 (React + Vite + JavaScript dashboard scaffold) next, or handle any deferred Phase 5 cleanup first (removing `AuthProbeController`/`WeatherForecastController`).
+2. If proceeding to Phase 6: inspect for any existing frontend scaffold (none currently exists in the repository), then propose the initial React+Vite+JS project structure per `docs/trading-platform-plan.md` Phase 6.
 
 ---
 *End of handoff. Update at the end of every completed phase (and major step batches). Do not skip §4 rules.*
