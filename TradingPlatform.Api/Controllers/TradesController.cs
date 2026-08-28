@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using TradingPlatform.Api.Contracts;
 using TradingPlatform.Api.Infrastructure.Persistence;
+using TradingPlatform.Api.Infrastructure.Formatting;
 
 namespace TradingPlatform.Api.Controllers;
 
@@ -41,20 +42,23 @@ public class TradesController : ControllerBase
             pageSize = DefaultPageSize;
         }
 
-        var trades = await _db.Trades
-            .AsNoTracking()
-            .OrderByDescending(t => t.TimestampUtc)
-            .Skip((page - 1) * pageSize)
-            .Take(pageSize)
+        var entities = await _db.Trades
+     .AsNoTracking()
+     .OrderByDescending(t => t.TimestampUtc)
+     .Skip((page - 1) * pageSize)
+     .Take(pageSize)
+     .ToListAsync(ct);
+
+        var trades = entities
             .Select(t => new TradeDto(
-                $"TRD{10000 + t.TradeId}",
+                TradeIdFormatter.Format(t.TradeId),
                 t.Symbol,
                 t.Side.ToString(),
                 t.Quantity,
                 t.Price,
                 t.Status.ToString(),
                 t.TimestampUtc))
-            .ToListAsync(ct);
+            .ToList();
 
         return Ok(trades);
     }

@@ -4,6 +4,7 @@ using TradingPlatform.Api.Contracts;
 using TradingPlatform.Api.Domain;
 using TradingPlatform.Api.Infrastructure.Persistence;
 using TradingPlatform.Api.Infrastructure.Services;
+using TradingPlatform.Api.Infrastructure.Formatting;
 
 namespace TradingPlatform.Api.Controllers;
 
@@ -83,7 +84,7 @@ public class OrdersController : ControllerBase
         }
 
         var response = new OrderResponse(
-            TradeId: $"TRD{10000 + trade.TradeId}",
+             TradeId: TradeIdFormatter.Format(trade.TradeId),
             Symbol: trade.Symbol,
             Side: trade.Side.ToString(),
             Quantity: trade.Quantity,

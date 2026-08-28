@@ -25,6 +25,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "db", "db", "{9E073EFE-A6B8-
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "trader-web", "trader-web", "{A291C44C-39D7-4E99-9199-7959087A1508}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TradingPlatform.Api.Tests", "TradingPlatform.Api.Tests\TradingPlatform.Api.Tests.csproj", "{EE493399-B3CC-440E-9B1F-8C083C27C159}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -35,6 +37,10 @@ Global
 		{93CB3BD7-9179-43A8-8E10-540E7C7CB433}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{93CB3BD7-9179-43A8-8E10-540E7C7CB433}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{93CB3BD7-9179-43A8-8E10-540E7C7CB433}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EE493399-B3CC-440E-9B1F-8C083C27C159}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EE493399-B3CC-440E-9B1F-8C083C27C159}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EE493399-B3CC-440E-9B1F-8C083C27C159}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EE493399-B3CC-440E-9B1F-8C083C27C159}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
