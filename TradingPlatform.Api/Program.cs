@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using System.Net;
+using TradingPlatform.Api.Hubs;
 using TradingPlatform.Api.Infrastructure.Persistence;
 using TradingPlatform.Api.Infrastructure.Services;
 using TradingPlatform.Api.Options;
@@ -86,6 +87,18 @@ builder.Services.AddSingleton<IPriceStore, InMemoryPriceStore>();
 // read by health/probe endpoints — one shared instance process-wide.
 builder.Services.AddSingleton<FeedStateService>();
 
+// ===== Position calculator (Phase 5, Step 22) =====
+// Pure/stateless netting + PnL math — no dependencies, so a singleton avoids
+// unnecessary per-request allocation.
+builder.Services.AddSingleton<IPositionCalculator, PositionCalculator>();
+
+// ===== Order validation (Phase 5, Step 24) =====
+// FluentValidation, invoked manually in OrdersController (not wired into
+// ASP.NET's automatic ModelState pipeline) so the existing { error: "..." }
+// response shape from Step 20 is preserved exactly.
+builder.Services.AddScoped<FluentValidation.IValidator<TradingPlatform.Api.Contracts.OrderRequest>,
+    TradingPlatform.Api.Validators.OrderRequestValidator>();
+
 // ===== Feed service (Phase 3) =====
 // Exactly ONE feed implementation runs, chosen by Feed:Mode:
 //   "Live" (default) — provider WebSocket;   "Mock" — synthetic demo ticks.
@@ -100,6 +113,40 @@ else
 {
     builder.Services.AddHostedService<LivePriceFeedService>();
 }
+
+
+// ===== SignalR (Phase 4, Step 16) =====
+// Live price streaming to the browser dashboard. Server-side SignalR ships in
+// the ASP.NET Core shared framework (Microsoft.NET.Sdk.Web) — no extra NuGet
+// package needed here; only the @microsoft/signalr JS client is added later
+// on the frontend (Phase 6).
+builder.Services.AddSignalR();
+
+// ===== Throttled broadcast (Phase 4, Step 17) =====
+// Reads IPriceStore on a 300ms cadence and pushes only changed symbols to the
+// "market" group — decoupled from whichever feed service (Live/Mock) is
+// currently writing into IPriceStore, so neither feed service needed changes.
+builder.Services.AddHostedService<MarketBroadcastService>();
+
+// ===== CORS (Phase 4, Step 16) =====
+// The React/Vite dev server runs on a different origin than this API, and the
+// SignalR hub connection uses credentials, so it needs an explicit origin
+// allow-list (AllowAnyOrigin is incompatible with AllowCredentials). Default
+// Vite dev ports covered for now — revisit once the frontend project's real
+// dev port is confirmed in Phase 6.
+const string SignalRClientCorsPolicy = "SignalRClient";
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy(SignalRClientCorsPolicy, policy =>
+    {
+        policy.WithOrigins("http://localhost:5173", "http://localhost:3000")
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials();
+    });
+});
+
+
 var app = builder.Build();
 
 // ===== TEMPORARY AUTH CONFIG VERIFICATION =====
@@ -118,6 +165,13 @@ Console.WriteLine(
 
 // Configure the HTTP request pipeline.
 
+// ===== Global exception handling (Phase 5, Step 23) =====
+// First in the pipeline so it wraps everything downstream — any unhandled
+// exception becomes a consistent { error } JSON response instead of the
+// framework's default HTML/stack-trace page, and is always logged server-side.
+app.UseMiddleware<TradingPlatform.Api.Middleware.ExceptionHandlingMiddleware>();
+
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -126,8 +180,11 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+app.UseCors(SignalRClientCorsPolicy);
+
 app.UseAuthorization();
 
 app.MapControllers();
+app.MapHub<MarketHub>("/hubs/market");
 
 app.Run();
