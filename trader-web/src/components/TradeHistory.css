@@ -1,0 +1,124 @@
+.trade-history {
+  background-color: #161b26;
+  border: 1px solid #242b3a;
+  border-radius: 12px;
+  padding: 20px;
+  color: #e6e9ef;
+}
+
+.trade-history__title {
+  margin: 0 0 16px;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.trade-history__empty,
+.trade-history__error {
+  color: #8a93a6;
+  padding: 24px 0;
+  text-align: center;
+}
+
+.trade-history__error {
+  color: #ff8a8a;
+}
+
+.trade-history__scroll {
+  overflow-x: auto;
+}
+
+.trade-history__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+.trade-history__table th {
+  text-align: left;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #8a93a6;
+  padding: 8px 12px;
+  border-bottom: 1px solid #242b3a;
+  white-space: nowrap;
+}
+
+.trade-history__table td {
+  text-align: left;
+  padding: 10px 12px;
+  border-bottom: 1px solid #1d2330;
+  white-space: nowrap;
+}
+
+.trade-history__id {
+  font-weight: 600;
+}
+
+.trade-history__muted {
+  color: #8a93a6;
+}
+
+.trade-history__side--buy {
+  color: #26a65b;
+  font-weight: 600;
+}
+
+.trade-history__side--sell {
+  color: #e5484d;
+  font-weight: 600;
+}
+
+.trade-history__cards {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  .trade-history {
+    padding: 16px;
+  }
+  .trade-history__table th,
+  .trade-history__table td {
+    padding: 8px 10px;
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 576px) {
+  .trade-history__scroll {
+    display: none;
+  }
+
+  .trade-history__cards {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .trade-card {
+    background-color: #1a2030;
+    border: 1px solid #242b3a;
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-size: 14px;
+  }
+
+  .trade-card__top {
+    display: flex;
+    justify-content: space-between;
+    font-weight: 600;
+  }
+
+  .trade-card__mid {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 6px;
+  }
+
+  .trade-card__bottom {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 6px;
+    font-size: 12px;
+  }
+}

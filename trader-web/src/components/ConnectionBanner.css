@@ -1,0 +1,50 @@
+.connection-banner {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 600;
+  flex-shrink: 0;
+  transition: background-color 0.2s ease;
+}
+
+.connection-banner__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: currentColor;
+}
+
+.connection-banner--connected {
+  background-color: #e6f7ec;
+  color: #1a7f37;
+}
+
+.connection-banner--connecting {
+  background-color: #fff8e1;
+  color: #b98900;
+}
+
+.connection-banner--disconnected {
+  background-color: #eceff1;
+  color: #546e7a;
+}
+
+.connection-banner--error {
+  background-color: #fdecea;
+  color: #c62828;
+}
+
+/* Mobile: compact chip so it fits next to the hamburger + title without
+   wrapping (the header itself is now the sticky, full-width element). */
+@media (max-width: 576px) {
+  .connection-banner {
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+  .connection-banner__label {
+    display: none; /* dot + color alone communicate state at this width */
+  }
+}

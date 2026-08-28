@@ -1,0 +1,56 @@
+.app-layout {
+  display: flex;
+  min-height: 100vh;
+}
+
+.app-layout__main {
+  flex: 1;
+  min-width: 0; /* prevents flex children (like the price table) from forcing page overflow */
+}
+
+.app__content {
+  padding: 24px;
+}
+
+.app__content h1 {
+  font-size: 22px;
+  margin-bottom: 4px;
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 24px;
+  align-items: start;
+}
+
+.dashboard-grid--secondary {
+  margin-top: 24px;
+}
+
+/* Side-by-side above ~1024px (desktop); stacked below that (tablet/mobile). */
+@media (min-width: 1024px) {
+  .dashboard-grid {
+    grid-template-columns: 2fr 1fr;
+  }
+  .dashboard-grid--secondary {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .app__content {
+    padding: 16px;
+  }
+}
+
+.app-layout {
+  overflow-x: hidden;
+}
+
+.app__content {
+  max-width: 1600px;
+  margin: 0 auto;
+  width: 100%;
+  box-sizing: border-box;
+}
