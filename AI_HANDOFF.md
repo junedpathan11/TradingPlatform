@@ -4,7 +4,7 @@
 > The user builds **locally in Visual Studio 2022**; the Arena workspace is a **planning/reference workspace only** (frozen reference scaffold + probe evidence — not authoritative). The AI gives small numbered steps; the user performs them locally and reports back; the AI verifies; then next step. The AI must explain every artifact per the learning rule (file name, exact location, why, responsibility, architecture layer, used-by; packages: name, why, phase, required/optional) and must never create/modify anything in the workspace on the user's behalf or advance phases without explicit go-ahead.
 
 **Purpose:** continuity document — any AI agent can resume from this exact point without conversation history.
-**Last updated:** 2026-08-28 · **Current phase:** Phase 5 COMPLETE ✅ (all REST endpoints + SignalR broadcast + order handling verified) · **Phase 6 (React dashboard) NOT STARTED**
+**Last updated:** 2026-08-29 · **Current phase:** Phase 8 COMPLETE ✅ (Serilog structured logging + temp-controller cleanup) · **Phase 9 (Unit tests) NOT STARTED**
 
 ---
 
@@ -54,30 +54,28 @@ ASP.NET Core 8 (`net8.0`, do NOT retarget) · C# · SignalR (built into the fram
 | Test project | Not created yet (Phase 9) |
 
 ## 6. Local project state (2026-08-28, post Phase 2.5; Phase 3 Step 12 issued)
-
-```
-C:\Users\patha\source\repos\TradingPlatform\
+C:\Users\patha\source\repos\TradingPlatform
 ├─ TradingPlatform.sln
 ├─ AI_HANDOFF.md, README.md
 ├─ docs\ (trading-platform-plan.md, assumptions.md, api-investigation.md)
 ├─ db\schema.sql
-└─ TradingPlatform.Api\
-   ├─ Program.cs                       ← AddDbContext; Configure<AuthApiOptions>; AddHttpClient<IAuthService,AuthService>
-   │                                      (BaseAddress+15s+default User-Agent; NO handler credentials); temp startup smoke-log
-   ├─ appsettings.json                 ← ConnectionStrings:DefaultConnection; AuthApi (BaseUrl/TokenPath); [Feed section = Step 12, pending]
-   ├─ Domain\Trade.cs, TradeSide.cs, TradeStatus.cs
-   ├─ Exceptions\AuthException.cs
-   ├─ Infrastructure\Persistence\TradingDbContext.cs (+ Configurations\TradeConfiguration.cs)
-   ├─ Infrastructure\Services\IAuthService.cs, AuthService.cs
-   │                                      ← Phase 2.5: MANUAL MD5 Digest handshake (challenge → answer),
-   │                                        TryAddWithoutValidation raw header, {} bodies, tolerant parser
-   │                                        incl. "result" token field; token cache + InvalidateToken()
-   ├─ Migrations\20260827150445_InitialCreate.cs (+ Designer, Snapshot)
-   ├─ Options\AuthApiOptions.cs        ← Username/AccountId/Password/BaseUrl/TokenPath
-   ├─ Controllers\WeatherForecastController.cs, WeatherForecast.cs  ← placeholders (Phase 5 removal)
-   ├─ Controllers\AuthProbeController.cs ← TEMPORARY auth verification (Phase 5 removal)
-   └─ Properties\launchSettings.json
-```
+└─ TradingPlatform.Api
+├─ Program.cs ← AddDbContext; Configure<AuthApiOptions>; AddHttpClient<IAuthService,AuthService>
+│ (BaseAddress+15s+default User-Agent; NO handler credentials); temp startup smoke-log
+├─ appsettings.json ← ConnectionStrings:DefaultConnection; AuthApi (BaseUrl/TokenPath); [Feed section = Step 12, pending]
+├─ Domain\Trade.cs, TradeSide.cs, TradeStatus.cs
+├─ Exceptions\AuthException.cs
+├─ Infrastructure\Persistence\TradingDbContext.cs (+ Configurations\TradeConfiguration.cs)
+├─ Infrastructure\Services\IAuthService.cs, AuthService.cs
+│ ← Phase 2.5: MANUAL MD5 Digest handshake (challenge → answer),
+│ TryAddWithoutValidation raw header, {} bodies, tolerant parser
+│ incl. "result" token field; token cache + InvalidateToken()
+├─ Migrations\20260827150445_InitialCreate.cs (+ Designer, Snapshot)
+├─ Options\AuthApiOptions.cs ← Username/AccountId/Password/BaseUrl/TokenPath
+├─ Controllers\WeatherForecastController.cs, WeatherForecast.cs ← placeholders (Phase 5 removal)
+├─ Controllers\AuthProbeController.cs ← TEMPORARY auth verification (Phase 5 removal)
+└─ Properties\launchSettings.json
+
 
 **Phase 3 Step 12 (issued, pending user confirmation):** `Options/FeedOptions.cs`, `Models/PriceTick.cs` (+ new `Models` folder), `Infrastructure/Services/IPriceStore.cs`, `Infrastructure/Services/InMemoryPriceStore.cs`; appsettings `Feed` section; `Program.cs` — `Configure<FeedOptions>` + `AddSingleton<IPriceStore, InMemoryPriceStore>`.
 
@@ -98,6 +96,30 @@ Auth foundation: `AuthApiOptions`, `IAuthService`/`AuthService`, `AuthException`
 **Live result:** probe → 200 `token acquired (length 8, expiresInSec=n/a)`. U1/U2/U3 CLOSED.
 **Note:** a live token leaked into chat once (via a raw log paste) — replaced by app restart; never paste raw response-body logs.
 
+### 7d. Phase 6 & 7 — React live dashboard + Order/History/Positions UI (COMPLETE, verified 2026-08-29)
+
+Built entirely **locally** (Visual Studio + npm/Vite; the Arena workspace never contained these files — this project's frontend is JS-only, never the workspace's frozen TS scaffold). Delivered in small numbered steps (25–31), each proposed by the AI as full file text, applied by the user, then verified before advancing:
+
+- **Step 25** — `trader-web/` scaffolded via `npm create vite@latest` (React + **JavaScript**, no TS). Base project structure only.
+- **Step 26** — `signalr/connection.js` (`createMarketConnection()` factory, single shared hub connection to `/hubs/market`), `signalr/MarketDataContext.jsx` (provider exposing `status`/`prices`), `components/ConnectionBanner.jsx` (4-state pill: Connected/Connecting/Disconnected/Error).
+- **Step 27** — `hooks/usePriceFlash.js`, `components/PriceRow.jsx`, `components/PriceCard.jsx`, `components/PriceTable.jsx` — desktop/tablet `<table>`, mobile stacked cards (≤576px breakpoint), green/red flash on price change, reuses the one shared SignalR connection (no second connection opened).
+- **Step 28** — `api/config.js` (`API_BASE_URL`), `api/orders.js` (`placeOrder`), `toast/ToastContext.jsx` + `Toast.css` (app-wide toast), `components/OrderTicket.jsx` + `.css` — Quick Trade panel (symbol select, Buy/Sell, quantity, live price readout, client-side `MAX_QUANTITY=1000` UX mirror of the Step 20 backend cap), side-by-side with `PriceTable` on desktop, stacked on mobile.
+- **Step 29** — `api/trades.js` (`fetchTrades`), `trades/TradeHistoryContext.jsx` (`TradeHistoryProvider`/`useTradeHistory`; loads latest 10 from `GET /api/trades` on mount; `addTrade()` prepends the POST-order response without a re-fetch, capped at 10), `components/TradeHistory.jsx` + `.css` (table/card, Buy=green/Sell=red). `OrderTicket` edited to call `addTrade(result)` on success.
+- **Step 30** — `api/positions.js` (`fetchPositions`), `positions/PositionsContext.jsx` (`PositionsProvider`/`usePositions`; `refresh()` re-fetches `GET /api/positions` — backend `PositionCalculator` remains the sole PnL source, no client-side math duplication; also self-polls every 3s so `unrealizedPnL`/`currentPrice` drift live between trades), `components/PositionSummary.jsx` + `.css` (table/card; long=green/short=red qty; positive/negative PnL coloring; null avgPrice on flat positions rendered as `—`). `OrderTicket` edited to call `refreshPositions()` after `addTrade()`.
+- **Step 31** — App Shell: `components/Sidebar.jsx` + `.css` (desktop persistent 220px sidebar with TradeDesk branding and 4 nav items — 📊 Dashboard [active], 📜 Trade History, 💼 Positions, ⚙️ Settings — presentational only, no React Router/routes added; tablet ≤900px collapses to a 64px icon-only rail; mobile ≤576px hidden by default, slides in via `translateX` as an overlay with dimmed backdrop + close button + Escape-key handler), `components/Header.jsx` + `.css` (sticky top bar: hamburger button visible only ≤576px, app title, `ConnectionBanner` moved inline here instead of its old floating fixed-position pill), `App.jsx`/`App.css` rewritten around a `.app-layout` flex wrapper (`Sidebar` + `.app-layout__main` containing `Header` + `main.app__content`), `ConnectionBanner.css` edited to drop the old floating/sticky rules (superseded by Header) and add a mobile-only rule collapsing to just the status dot.
+  - **Bug caught during Step 31 and fixed:** the Escape-key `useEffect` added to `App.jsx` referenced `useEffect` without updating the top import line (`import { useState } from "react"`), throwing `ReferenceError: useEffect is not defined` on render → blank black page. Fixed by importing `{ useState, useEffect }`. Root-caused via terminal (`npm run dev` logs clean → ruled out build error) + reviewing the pasted `App.jsx` source directly. Confirmed working after the one-line fix.
+
+**Result:** all 5 reference-UI panels (Connection status, Live Prices, Quick Trade, Trade History, Positions) are functionally complete, independently verified (including agent-side PnL arithmetic cross-checks against long/short/flat positions), and wrapped in a responsive App Shell. Verified by the user via screenshots at 1440/768/375-class widths (and DevTools responsive emulation) at each step — no known open UI bugs.
+
+### 7e. Phase 8 — Hardening (COMPLETE, verified 2026-08-29)
+
+Backend-only, `TradingPlatform.Api` (this repo checkout, not `trader-web/`). Two independent pieces, delivered as one combined change set per the same inspect → propose → user-applies → verify workflow:
+
+1. **Serilog structured logging.** Added `Serilog.AspNetCore` **8.0.3** (matches locked `net8.0` target — the newer `10.0.0` targets net9/net10 only, so it was rejected). Console sink only (user's choice; no file sink). `Program.cs` restructured around Serilog's recommended two-stage bootstrap pattern: a `CreateBootstrapLogger()` catches host-startup failures, then `builder.Host.UseSerilog(...)` builds the final logger from `appsettings.json`'s new `"Serilog"` section (`MinimumLevel:Default`/`Override` — replaces the old `"Logging"` section, renamed in both `appsettings.json` and `appsettings.Development.json`). `app.UseSerilogRequestLogging()` added right after the existing `ExceptionHandlingMiddleware` registration, condensing ASP.NET's normally-noisy per-request logging into one clean line per request (`HTTP GET /api/positions responded 200 in 9.3ms`). The whole `app.Run()` call now sits inside a `try/catch/finally` with `Log.Fatal`/`Log.CloseAndFlush()`, which also let the old TEMPORARY `Console.WriteLine($"[startup] AuthApi bound: ..."` auth-config diagnostic block be removed (redundant now that Serilog logs startup state properly).
+2. **Temporary/scaffold code removal.** Deleted `Controllers/AuthProbeController.cs` (explicitly marked "remove in Phase 5" in its own doc comment — the Phase 2/2.5/3 diagnostic endpoints `/api/authprobe`, `/discover`, `/instruments`, `/feedconfig`), `Controllers/WeatherForecastController.cs`, and `WeatherForecast.cs` (default ASP.NET template scaffold, never used). Also removed several blocks of dead commented-out `AddHttpClient<IAuthService, AuthService>` code in `Program.cs` left over from early Phase 2/2.5 auth debugging — the currently-used named-`HttpClient`+manual-Digest approach (`AddHttpClient("AuthApi", ...)` + `AddSingleton<IAuthService>(...)`) was preserved byte-for-byte.
+
+**Verified by user:** clean Serilog console output on startup (including the pre-existing `MOCK FEED ACTIVE` warning now rendering as a proper leveled `WRN` line), Swagger UI confirmed to list only Health/Prices/Orders/Trades/Positions (no AuthProbe/WeatherForecast), and a full end-to-end dashboard flow re-tested (place order → toast → Trade History prepend → Positions refresh/poll) with no regressions. No DI registrations, hosted services, CORS policy, or middleware ordering changed from the already-verified Phase 5 setup — only logging infrastructure and dead-code removal.
+
 ## 8. Phase roadmap status
 
 | Phase | Scope | Status |
@@ -109,10 +131,10 @@ Auth foundation: `AuthApiOptions`, `IAuthService`/`AuthService`, `AuthException`
 | 3 | Price feed (live WS + mock fallback) | ✅ **COMPLETE** — `FeedOptions`/`PriceTick`/`IPriceStore`/`InMemoryPriceStore`/`FeedStateService`/`PriceMessageParser`/`LivePriceFeedService`/`MockPriceFeedService` all implemented; dual-mode via `Feed:Mode` (committed `e1fba90`) |
 | 4 | SignalR throttled broadcast | ✅ **COMPLETE (verified 2026-08-28)** — `MarketHub` (`/hubs/market`, `"market"` group, snapshot-on-connect) + `MarketBroadcastService` (300 ms throttled `"prices"` batches); manual browser-console SignalR client confirmed snapshot + ~3/sec batched updates |
 | 5 | REST endpoints + orders | ✅ **COMPLETE (verified 2026-08-28)** — `GET /api/prices`, `GET /api/health`, `POST /api/orders`, `GET /api/trades`, `GET /api/positions`, `TRD100xx` formatting, global `ExceptionHandlingMiddleware`, `OrderRequestValidator` (FluentValidation) — all step-by-step verified via Swagger + SQL Server checks. *(Temporary `AuthProbeController`/`WeatherForecastController` not yet removed — deferred, not required for functionality.)* |
-| 6 | React live dashboard | ⬜ **NOT STARTED** — pre-req: fresh React+Vite+**JS** scaffold locally (never the workspace TS one) |
-| 7 | Order ticket, history, positions UI | ⬜ |
-| 8 | Hardening (Serilog; remove temp logs/probe) | ⬜ |
-| 9 | Unit tests (xUnit project) | ⬜ |
+| 6 | React live dashboard | ✅ **COMPLETE (verified 2026-08-29)** — Vite+React+JS scaffold; shared SignalR connection (`MarketDataContext`) driving `PriceTable` with price-flash; responsive at 1440/768/375 throughout |
+| 7 | Order ticket, history, positions UI | ✅ **COMPLETE (verified 2026-08-29)** — `OrderTicket` (Quick Trade, toast feedback), `TradeHistory` (live prepend via `TradeHistoryContext`, latest-10 cap), `PositionSummary` (backend-sourced PnL via `GET /api/positions`, post-trade refresh + 3s poll); App Shell (`Sidebar` + `Header`) wraps all panels with responsive nav (desktop persistent sidebar, tablet icon rail, mobile hamburger slide-out overlay) |
+| 8 | Hardening (Serilog; remove temp logs/probe) | ✅ **COMPLETE (verified 2026-08-29)** — `Serilog.AspNetCore` 8.0.3 added (console sink, `ReadFrom.Configuration`, two-stage bootstrap init, `UseSerilogRequestLogging()`); `AuthProbeController.cs`, `WeatherForecastController.cs`, `WeatherForecast.cs` deleted; temp startup `Console.WriteLine` auth-config dump and dead commented-out `AddHttpClient<IAuthService, AuthService>` blocks removed from `Program.cs`; `appsettings.json`/`appsettings.Development.json` `"Logging"` section renamed to `"Serilog"` (`MinimumLevel.Default`/`Override`) |
+| 9 | Unit tests (xUnit project) | ⬜ **NOT STARTED** — next up |
 | 10 | Docs & delivery (README final, .gitignore review, screenshots/demo) | ⬜ |
 
 ## 9. Decision log / exact next steps
@@ -130,9 +152,13 @@ Auth foundation: `AuthApiOptions`, `IAuthService`/`AuthService`, `AuthException`
 - Step 23: `Middleware/ExceptionHandlingMiddleware` — global `{ error, traceId }` JSON envelope, logged server-side, registered first in the pipeline.
 - Step 24: `Validators/OrderRequestValidator` (FluentValidation package added) — replaced manual checks in `OrdersController`, invoked manually (not auto-wired into `ModelState`) to preserve the existing `{ error }` response shape. *(Hit and resolved a DI-registration placement bug: the `AddScoped<IValidator<OrderRequest>, OrderRequestValidator>()` call must be registered before `builder.Build()`, not after.)*
 
+**2026-08-29:** Phase 6 (React live dashboard) and Phase 7 (Order ticket/history/positions UI) built and verified step-by-step (Steps 25–31, see §7d) entirely in the user's local `trader-web/` project (not present in this repo checkout). All 5 reference-UI panels plus the responsive App Shell (sidebar + header) are complete and confirmed working at 1440/768/375-class widths. User elected to proceed to **Phase 8 (Hardening)** next.
+
+**2026-08-29 (continued):** Phase 8 (Hardening) completed and verified — see §7e. Serilog structured logging added (`Serilog.AspNetCore` 8.0.3, console sink), temporary `AuthProbeController`/`WeatherForecastController`/`WeatherForecast.cs` removed, dead commented-out code cleaned from `Program.cs`. User confirmed clean startup logs, Swagger UI free of removed endpoints, and full end-to-end dashboard flow still working post-change.
+
 **Immediate next actions:**
-1. Confirm with the user whether to start Phase 6 (React + Vite + JavaScript dashboard scaffold) next, or handle any deferred Phase 5 cleanup first (removing `AuthProbeController`/`WeatherForecastController`).
-2. If proceeding to Phase 6: inspect for any existing frontend scaffold (none currently exists in the repository), then propose the initial React+Vite+JS project structure per `docs/trading-platform-plan.md` Phase 6.
+1. Start **Phase 9 — Unit tests**: set up an xUnit test project (e.g. `TradingPlatform.Api.Tests`) covering key backend logic — prime candidates: `IPositionCalculator`/`PositionCalculator` (netting + PnL math, already informally verified via manual PnL cross-checks during Step 30 but not covered by automated tests), `OrderRequestValidator` (FluentValidation rules from Step 24), and possibly the `TRD100xx` trade-ID formatting logic in `OrdersController`.
+2. Continue the same step-by-step, user-applies/agent-never-edits-locally workflow used for Phases 6–8.
 
 ---
 *End of handoff. Update at the end of every completed phase (and major step batches). Do not skip §4 rules.*

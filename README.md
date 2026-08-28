@@ -4,9 +4,9 @@ A candidate evaluation project: a mini real-time trading platform with an
 **ASP.NET Core 8 Web API** backend, a **React (Vite, JavaScript)** dashboard,
 **SignalR** live price streaming, and **SQL Server** (EF Core 8) trade storage.
 
-> **Status: 🚧 In progress — Phases 0–5 complete (backend: auth, live/mock price feed, throttled SignalR streaming, REST endpoints, order handling).**
-> Phase 6 (React dashboard) has not started yet.
-> See [`docs/trading-platform-plan.md`](docs/trading-platform-plan.md) for the full roadmap
+> **Status: 🚧 In progress — Phases 0–8 complete (backend: auth, live/mock price feed, throttled SignalR streaming, REST endpoints, order handling, Serilog hardening; frontend: full React live dashboard with Quick Trade, Trade History, Positions, and a responsive App Shell).**
+> Phase 9 (unit tests) has not started yet.
+> See [`trading-platform-plan.md`](trading-platform-plan.md) for the full roadmap
 > and [`AI_HANDOFF.md`](AI_HANDOFF.md) for the current project state.
 
 ## What it does (target)
@@ -28,7 +28,10 @@ A candidate evaluation project: a mini real-time trading platform with an
 | 3 | WebSocket price feed (dual-mode: live + mock; reconnect/backoff; `IPriceStore`) | ✅ Done |
 | 4 | SignalR throttled price broadcast (`MarketHub`, `MarketBroadcastService`, ~300 ms batches) | ✅ Done |
 | 5 | REST endpoints (`/api/prices`, `/api/orders`, `/api/trades`, `/api/positions`, `/api/health`), global exception middleware, FluentValidation | ✅ Done |
-| 6–10 | React dashboard, order/history/positions UI, hardening, tests, delivery | ⬜ Upcoming |
+| 6 | React live dashboard (`trader-web/`: Vite + React + JavaScript, shared SignalR connection, `ConnectionBanner`, `PriceTable` with price-flash, responsive App Shell — sidebar + header) | ✅ Done |
+| 7 | Order ticket, trade history, positions UI (`OrderTicket`/Quick Trade with toast feedback, `TradeHistory` with live prepend, `PositionSummary` with backend-sourced PnL + live polling) | ✅ Done |
+| 8 | Hardening — Serilog structured logging, removal of temporary `AuthProbeController`/`WeatherForecastController` scaffold | ✅ Done |
+| 9–10 | Unit tests (xUnit), final docs & delivery (screenshots/demo) | ⬜ Upcoming |
 
 ## Tech stack (locked)
 
