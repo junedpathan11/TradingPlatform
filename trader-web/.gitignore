@@ -22,3 +22,12 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+
+# Frontend (trader-web/ — Vite + React)
+trader-web/node_modules/
+trader-web/dist/
+trader-web/.vite/
+trader-web/*.local
+trader-web/.env
+trader-web/.env.*
