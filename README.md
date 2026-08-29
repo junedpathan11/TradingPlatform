@@ -98,6 +98,21 @@ Override if needed via environment variable ConnectionStrings__DefaultConnection
 
 Provider credentials (Live mode only) — AuthApi:Username (user ID), AuthApi:AccountId, and AuthApi:Password in user-secrets only. Never put them in source or appsettings.json.
 
+## Database Setup & Migrations
+
+The backend uses **SQL Server with Entity Framework Core 8**.
+
+Before running the API:
+
+1. Make sure SQL Server is installed and running.
+2. Configure the database connection string in the application's configuration.
+3. Apply the existing Entity Framework Core migrations.
+
+From the repository root, run:
+
+```bash
+dotnet ef database update --project TradingPlatform.Api
+
 1. Run the backend (with Swagger)
 
 cd TradingPlatform.Api
